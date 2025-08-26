@@ -1620,6 +1620,8 @@ dependencies = [
 name = "staking_contract"
 version = "0.1.0"
 dependencies = [
+ "borsh 1.5.7",
+ "borsh-derive 1.5.7",
  "solana-program",
 ]
 
