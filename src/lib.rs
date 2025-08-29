@@ -1,6 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo}, entrypoint::{self, ProgramResult}, msg, program_error::ProgramError::{self, InvalidInstructionData, MissingRequiredSignature}, pubkey::Pubkey, stake::instruction::create_account
+    account_info::{next_account_info, AccountInfo}, entrypoint::{self, ProgramResult}, msg, program::invoke, program_error::ProgramError::{self, InvalidInstructionData, MissingRequiredSignature}, pubkey::Pubkey, rent::Rent, stake::instruction::create_account, sysvar::Sysvar
     // progra
 };
 
@@ -84,8 +84,14 @@ pub fn entry_instruction(
 }
 
 
-fn SetupAccount(ix_data:SetupAccountStruct,payer:&AccountData)->Result<Instructions, ProgramError>{
-    assert!(payer.is_signer);
+pub fn SetupAccount(ix_data:SetupAccountStruct,payer:&AccountInfo)->Result<Instructions, ProgramError>{
+    // assert!(payer.is_signer);
+
+    //get rent for account
+    let account_rent = Rent::from_account_info(payer);
+
+    //cpi call to deposit rent needed
+    invoke(instruction, account_infos)
 
 }
 
