@@ -1,13 +1,20 @@
+#![allow(unused_imports)]
+
+
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    account_info::{next_account_info, AccountInfo}, entrypoint::{self, ProgramResult}, msg, program::invoke, program_error::ProgramError::{self, InvalidInstructionData, MissingRequiredSignature}, pubkey::Pubkey, rent::Rent, stake::instruction::create_account, sysvar::Sysvar
-    // progra
+    account_info::{next_account_info, AccountInfo}, entrypoint::ProgramResult, msg, program::invoke_signed, program_error::ProgramError::{self, InvalidInstructionData, MissingRequiredSignature}, pubkey::Pubkey, rent::Rent, stake::instruction::create_account,
+    system_instruction, sysvar::Sysvar,
+    entrypoint
 };
 
 #[derive(BorshSerialize,BorshDeserialize)]
 struct SetupAccountStruct{
     payer:Pubkey,
-    amount:u64
+    amount:u64,
+    pda_seeds:Vec<u8>,
+    pda_bump:u8,
+    space:u64
 }
 
 
@@ -62,10 +69,10 @@ pub fn entry_instruction(
 
     match instruction_type{
         Ok(Instructions::Setup(SetupAccountStruct))=>{
-            SetupAccount(SetupAccountStruct,payer);
+            SetupAccount(SetupAccountStruct,program_id,payer);
         },
         Ok(Instructions::Delegate(DelegateAccountStruct))=>{
-            Delegate(DelegateAccountStruct);
+            // Delegate(DelegateAccountStruct);
         },
         Err(errormsg)=>{
             msg!("Invalid Instruction! Error is { }",errormsg);
@@ -84,17 +91,33 @@ pub fn entry_instruction(
 }
 
 
-pub fn SetupAccount(ix_data:SetupAccountStruct,payer:&AccountInfo)->Result<Instructions, ProgramError>{
+pub fn SetupAccount(ix_data:SetupAccountStruct,program_id:&Pubkey,payer:&AccountInfo)->Result<(), ProgramError>{
     // assert!(payer.is_signer);
 
+    if payer.key!=&ix_data.payer{
+        panic!("Incorrect account used!");
+    }
+
     //get rent for account
-    let account_rent = Rent::from_account_info(payer);
+    let account_rent = Rent::from_account_info(payer)?.lamports_per_byte_year;
 
+    let ix = system_instruction::create_account(
+        payer.key, 
+payer.key, 
+account_rent, 
+        ix_data.space, 
+        program_id);
+
+    //how does this concatenate?
+    let seeds = &[b"test",&ix_data.pda_seeds[..],&[ix_data.pda_bump]];
+    
     //cpi call to deposit rent needed
-    invoke(instruction, account_infos)
+    invoke_signed(&ix, 
+        &[payer.clone()],
+    &[seeds])
 
 }
 
-fn Delegate(ixdata:DelegateAccountStruct)->Result<Instructions,ProgramError>{
+// fn Delegate(ixdata:DelegateAccountStruct)->Result<Instructions,ProgramError>{
 
-}
+// }
